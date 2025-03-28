@@ -52,13 +52,14 @@ def margin_uncertainties(X, y, X_test, model="RandomForest"):
             support = np.ceil([np.sum(1 / dist[i][y[indices[i]] == c]) for c in range(np.max(y) + 1)])
             aleatoric[i], epistemic[i] = compute_margin(support)
 
-    # Random Fores
+    # Random Forest
     elif model == "RandomForest":
         cls = RandomForestClassifier(min_samples_leaf=5)
         cls.fit(X, y)
         size = len(cls.estimators_)
         trees = [estimator.tree_ for estimator in cls.estimators_]
         leaf_indices = [estimator.apply(np.array(X_test)) for estimator in cls.estimators_]
+        leaf_depth = [np.sum(estimator.decision_path(X_test).toarray(), axis=1) - 1 for estimator in cls.estimators_]
 
         for i in range(X_test.shape[0]):
             aleatoric_temp = 0
@@ -68,7 +69,8 @@ def margin_uncertainties(X, y, X_test, model="RandomForest"):
                 leaf_index = leaf_indices[j][i]
                 support = trees[j].value[leaf_index][0]
                 support = support * trees[j].n_node_samples[leaf_index]
-
+                support = support * leaf_depth[j][i]
+                
                 al, ep = compute_margin(support)
                 aleatoric_temp += al
                 epistemic_temp += ep
