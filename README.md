@@ -30,8 +30,7 @@ aleatoric, epistemic = unc.margin_uncertainties(X, y, X_test, model="ParzenWindo
 plots.plot_uncertainties(X_test, aleatoric, epistemic)
 ```
 
-<img src="images/al_parzen.png" alt="AU_parzen" width="200">
-<img src="images/ep_parzen.png" alt="EU_parzen" width="200">
+<img src="images/al_parzen.png" alt="AU_parzen" width="200"><img src="images/ep_parzen.png" alt="EU_parzen" width="200">
 
 ### Decision Tree
 
@@ -40,8 +39,7 @@ aleatoric, epistemic = unc.margin_uncertainties(X, y, X_test, model="DecisionTre
 plots.plot_uncertainties(X_test, aleatoric, epistemic)
 ```
 
-<img src="images/al_tree.png" alt="AU_tree" width="200">
-<img src="images/ep_tree.png" alt="EU_tree" width="200">
+<img src="images/al_tree.png" alt="AU_tree" width="200"><img src="images/ep_tree.png" alt="EU_tree" width="200">
 
 ### Random Forest
 
@@ -50,8 +48,7 @@ aleatoric, epistemic = unc.margin_uncertainties(X, y, X_test, model="RandomFores
 plots.plot_uncertainties(X_test, aleatoric, epistemic)
 ```
 
-<img src="images/al_rf.png" alt="AU_rf" width="200">
-<img src="images/ep_rf.png" alt="EU_rf" width="200">
+<img src="images/al_rf.png" alt="AU_rf" width="200"><img src="images/ep_rf.png" alt="EU_rf" width="200">
 
 ### Nearest Neighbors
 
@@ -60,8 +57,7 @@ aleatoric, epistemic = unc.margin_uncertainties(X, y, X_test, model="NearestNeig
 plots.plot_uncertainties(X_test, aleatoric, epistemic)
 ```
 
-<img src="images/al_knn.png" alt="AU_KNN" width="200">
-<img src="images/ep_knn.png" alt="EU_KNN" width="200">
+<img src="images/al_knn.png" alt="AU_KNN" width="200"><img src="images/ep_knn.png" alt="EU_KNN" width="200">
 
 
 ## Reference
