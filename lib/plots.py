@@ -2,6 +2,7 @@ import numpy as np
 from matplotlib import cm as CM
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
+import matplotlib.gridspec as gridspec
 
 R3 = 1.73205
 S = 60
@@ -10,14 +11,16 @@ COLORS = [[0, .8, 0], [.8, 0, 0], [0, 0, .8]]
 
 # Scatter plot uncertainties
 def plot_uncertainties(X_test, aleatoric, epistemic):
-    draw_unc(X_test, aleatoric**0.8)
-    draw_unc(X_test, epistemic**0.8)
+    draw_unc(X_test, aleatoric**0.8, "AU")
+    draw_unc(X_test, epistemic**0.8, "EU")
     plt.show()
 
 # Scatter plot dataset figure
-def draw_unc(X_test, certainties):
-    fig = plt.figure(figsize=(5, 4), dpi=100)
-    subplot = fig.add_subplot(111)
+def draw_unc(X_test, certainties, text):
+    fig = plt.figure(figsize=(6, 4), dpi=100)
+
+    gs = gridspec.GridSpec(1, 2, figure=fig, width_ratios=[5, 1], wspace=0)
+    subplot = fig.add_subplot(gs[0, 0])
 
     # Remove useless values
     gridsize=(int(SIZE[0] * 0.68), int(SIZE[1] * 0.43))
@@ -37,8 +40,20 @@ def draw_unc(X_test, certainties):
     subplot.set_xlim(np.min(X_test[:, 0]) + 0.2, np.max(X_test[:, 0]) - 0.2)
     subplot.set_ylim(np.min(X_test[:, 1]) + 0.2, np.max(X_test[:, 1]) - 0.2)
 
-    # Full zoom
-    fig.subplots_adjust(0,0,1,1)
+    subplot.set_position([0, 0, 5/6, 1])
+
+    ax = fig.add_subplot(gs[0, 1])
+    gradient = np.linspace(1, 0, 256).reshape(-1, 1)
+    ax.imshow(gradient, aspect='auto', cmap='jet', extent=[0.2, 0.8, 0.2, 0.6])
+
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_frame_on(False)
+    ax.set_position([0.87, 0.15, 0.09, 0.7])
+
+    plt.text(0.873, 0.9, "Max " + text, transform=plt.gcf().transFigure)
+    plt.text(0.873, 0.08, "Min " + text, transform=plt.gcf().transFigure)
+    
 
 # Scatter plot dataset figure
 def plot_dataset(X, y):
