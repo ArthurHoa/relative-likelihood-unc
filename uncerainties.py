@@ -104,6 +104,11 @@ def compute_margin(support):
     Returns:
         uncertainties: aleatoric and epistemic uncertainty 
     """
+
+    # special case of null support array
+    if not np.any(support):
+        return 0, 1
+
     K = len(support)
     margins_args = np.argsort(support)[::-1][0:2]
 
@@ -163,7 +168,8 @@ def solve_theta(f_eps, theta_k, k):
     # Constraints
     constraints = [
         cp.sum(theta_other) == 1 - theta_k,
-        theta_other >= 0,
+        # fix log(0)
+        theta_other >= 0.000001,
         theta_k - theta_other >= 0
     ]
 
