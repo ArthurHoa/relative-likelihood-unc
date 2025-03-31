@@ -69,7 +69,7 @@ def margin_uncertainties(X, y, X_test, model="RandomForest"):
                 leaf_index = leaf_indices[j][i]
                 support = trees[j].value[leaf_index][0]
                 support = support * trees[j].n_node_samples[leaf_index]
-                support = support * leaf_depth[j][i]
+                support = support * (2**leaf_depth[j][i])
                 
                 al, ep = compute_margin(support)
                 aleatoric_temp += al
