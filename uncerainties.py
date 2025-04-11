@@ -37,10 +37,12 @@ def margin_uncertainties(X, y, X_test, model="RandomForest"):
         cls.fit(X, y)
         tree = cls.tree_
         leaf_indices = cls.apply(np.array(X_test))
+        leaf_depth = np.sum(cls.decision_path(X_test).toarray(), axis=1) - 1
 
         for i in range(X_test.shape[0]):
             support = tree.value[leaf_indices[i]][0]
             support = support * tree.n_node_samples[leaf_indices[i]]
+            support = support * (2**leaf_depth[i])
             aleatoric[i], epistemic[i] = compute_margin(support)
 
     # Decision Tree
