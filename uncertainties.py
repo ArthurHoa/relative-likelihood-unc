@@ -4,6 +4,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import NearestNeighbors
 import numpy as np
 import cvxpy as cp
+from sklearn.metrics.pairwise import euclidean_distances
 
 def margin_uncertainties(X, y, X_test, model="RandomForest"):
     """
@@ -33,16 +34,16 @@ def margin_uncertainties(X, y, X_test, model="RandomForest"):
 
     # Decision Tree
     elif model == "DecisionTree":
-        cls = DecisionTreeClassifier(min_samples_leaf=5)
+        cls = DecisionTreeClassifier(min_samples_leaf=1)
         cls.fit(X, y)
         tree = cls.tree_
         leaf_indices = cls.apply(np.array(X_test))
         leaf_depth = np.sum(cls.decision_path(X_test).toarray(), axis=1) - 1
-
         for i in range(X_test.shape[0]):
             support = tree.value[leaf_indices[i]][0]
-            support = support * tree.n_node_samples[leaf_indices[i]]
+#            support = support * tree.n_node_samples[leaf_indices[i]]
             support = support * (2**leaf_depth[i])
+#            print(support)
             aleatoric[i], epistemic[i] = compute_margin(support)
 
     # Decision Tree
@@ -56,22 +57,43 @@ def margin_uncertainties(X, y, X_test, model="RandomForest"):
 
     # Random Forest
     elif model == "RandomForest":
-        cls = RandomForestClassifier(min_samples_leaf=5)
+        cls = RandomForestClassifier(min_samples_leaf=1)
         cls.fit(X, y)
+        hard_predictions = cls.predict(X_test)
+        probabilsitic_predictions = cls.predict_proba(X_test)
         size = len(cls.estimators_)
         trees = [estimator.tree_ for estimator in cls.estimators_]
         leaf_indices = [estimator.apply(np.array(X_test)) for estimator in cls.estimators_]
         leaf_depth = [np.sum(estimator.decision_path(X_test).toarray(), axis=1) - 1 for estimator in cls.estimators_]
 
+        trees_hard_predictions = []
+        trees_probabilistic_predictions = []
+        for j in range(size):
+            trees_hard_predictions.append(cls.estimators_[j].predict(X_test)) 
+            trees_probabilistic_predictions.append(cls.estimators_[j].predict_proba(X_test))    
         for i in range(X_test.shape[0]):
             aleatoric_temp = 0
             epistemic_temp = 0
 
+            current_trees_probabilistic_predictions = [trees_probabilistic_predictions[j][i] for j in range(size)]
+            current_trees_hard_predictions = [trees_hard_predictions[j][i] for j in range(size)]
+            dists_to_p_star = euclidean_distances(probabilsitic_predictions[i].reshape((1,-1)), current_trees_probabilistic_predictions)[0]
+            sorted_indices = np.argsort(dists_to_p_star)
+
+            supported_tree_indices = []  
             for j in range(size):
+                if current_trees_hard_predictions[sorted_indices[j]] != hard_predictions[i]:
+                    supported_tree_indices = [sorted_indices[i] for i in range(j)]
+                    break
+                
+            for j in supported_tree_indices:                
                 leaf_index = leaf_indices[j][i]
                 support = trees[j].value[leaf_index][0]
-                support = support * trees[j].n_node_samples[leaf_index]
+#                print(support)
+#                support = support * trees[j].n_node_samples[leaf_index]
                 support = support * (2**leaf_depth[j][i])
+                
+                # Check the sklear version before turn on or of line 92
                 
                 al, ep = compute_margin(support)
                 aleatoric_temp += al
@@ -98,6 +120,7 @@ def cache(f):
 
 # Compute margin uncertainties
 @cache
+
 def compute_margin(support):
     """
     Compute margin uncertainties based on a support vector
@@ -113,9 +136,14 @@ def compute_margin(support):
 
     K = len(support)
     margins_args = np.argsort(support)[::-1][0:2]
-
-    opt = minimize_scalar(f_objective, bounds=(1/K, 1), method='bounded', args=(support, margins_args[0]))
-    pl1 = opt.x
+    
+    low_val_1 = margins_args[0]/np.sum(support)
+    
+    if low_val_1 == 1:
+        pl1 = 1
+    else:
+        opt = minimize_scalar(f_objective, bounds=(low_val_1, 1), method='bounded', args=(support, margins_args[0]))
+        pl1 = opt.x
 
     opt = minimize_scalar(f_objective, bounds=(1/K, 1), method='bounded', args=(support, margins_args[1]))
     pl2 = opt.x
@@ -133,12 +161,21 @@ def f_objective(theta, support, k):
 
     thetas = solve_theta(support, theta, k)
     thetas_star = support / np.sum(support)
-
-    left = np.prod(thetas**support) / np.prod(thetas_star**support)
+    numerator = np.sum([support[j]*np.log(thetas[j]) for j in range(K) if support[j] > 0])
+    denominator = np.sum([support[j]*np.log(thetas_star[j]) for j in range(K) if support[j] > 0])
+ 
+    left = np.exp(numerator - denominator)
     right = ((K * theta) - 1) / (K - 1)
 
     res = min(left, right)
     return -res
+
+    # left = np.prod(thetas**support) / np.prod(thetas_star**support)
+    # right = ((K * theta) - 1) / (K - 1)
+
+    # res = min(left, right)
+    
+    # return -res
 
 def solve_theta(f_eps, theta_k, k):
     """
@@ -164,6 +201,7 @@ def solve_theta(f_eps, theta_k, k):
 
     # Objective
     f_eps_other = np.array([f_eps[i] for i in other_indices])
+
 
     objective = cp.Maximize(cp.sum(cp.multiply(f_eps_other, cp.log(theta_other))))
 
